@@ -3,9 +3,9 @@
 set -eu
 set -o pipefail
 
+readonly ROOT_DIR="$(cd "$(dirname "${0}")/.." && pwd)"
 readonly PROGDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly BUILDPACKDIR="$(cd "${PROGDIR}/.." && pwd)"
-readonly ROOT_DIR="${BUILDPACKDIR}"
 
 # shellcheck source=SCRIPTDIR/.util/print.sh
 source "${ROOT_DIR}/scripts/.util/print.sh"
@@ -107,12 +107,17 @@ function main() {
     fi
   fi
 
+  if [[ ${#targets[@]} -eq 0 ]]; then
+    targets=("linux/amd64")
+    util::print::info "Setting default target platform architecture to: linux/amd64"
+  fi
+
   run::build
   cmd::build
 
-  ## For backwards compatibility with amd64 workflows
+  ## For backwards compatibility with amd64 wokflows
   if [[ ${#targets[@]} -eq 1 && "${targets[0]}" == "linux/amd64" ]]; then
-    cp -r "${BUILDPACKDIR}/linux/amd64/bin/" "${BUILDPACKDIR}/" 2>/dev/null || true
+    cp -r "${BUILDPACKDIR}/linux/amd64/bin/" "${BUILDPACKDIR}/"
   fi
 }
 
@@ -147,15 +152,15 @@ function run::build() {
             -o "${platform}/${arch}/bin/run" \
               "${BUILDPACKDIR}/run"
 
-        echo "Success!"
+          echo "Success!"
 
-        names=("detect")
+          names=("detect")
 
-        if [ -f "${BUILDPACKDIR}/extension.toml" ]; then
-          names+=("generate")
-        else
-          names+=("build")
-        fi
+          if [ -f "${BUILDPACKDIR}/extension.toml" ]; then
+            names+=("generate")
+          else
+            names+=("build")
+          fi
 
         for name in "${names[@]}"; do
           printf "%s" "Linking ${name}... "

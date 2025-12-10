@@ -117,6 +117,11 @@ function main() {
     util::print::info "Setting default target platform architecture to: linux/amd64"
   fi
 
+  if [[ ${#targets[@]} -eq 0 ]]; then
+    targets=("linux/amd64")
+    util::print::info "Setting default target platform architecture to: linux/amd64"
+  fi
+
   run::build
   cmd::build
 

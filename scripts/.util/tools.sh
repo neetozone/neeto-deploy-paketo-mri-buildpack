@@ -278,6 +278,64 @@ function util::tools::libpak-tools::install () {
   fi
 }
 
+function util::tools::libpak-tools::install () {
+  local dir token
+  token=""
+
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --directory)
+        dir="${2}"
+        shift 2
+        ;;
+
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
+
+  mkdir -p "${dir}"
+  util::tools::path::export "${dir}"
+
+
+  if [[ ! -f "${dir}/libpak-tools" ]]; then
+    local version curl_args os arch
+
+    version="$(jq -r .libpaktools "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
+
+    curl_args=(
+      "--fail"
+      "--silent"
+      "--location"
+      "--output" "${dir}/libpak-tools.tar.gz"
+    )
+
+    if [[ "${token}" != "" ]]; then
+      curl_args+=("--header" "Authorization: Token ${token}")
+    fi
+
+    util::print::title "Installing libpak-tools ${version}"
+
+    os=$(util::tools::os)
+    arch=$(util::tools::arch --format-amd64-x86_64)
+
+    curl "https://github.com/paketo-buildpacks/libpak-tools/releases/download/${version}/libpak-tools_${os}_${arch}.tar.gz" \
+      "${curl_args[@]}"
+
+    tar -xzf "${dir}/libpak-tools.tar.gz" -C $dir
+    rm "${dir}/libpak-tools.tar.gz"
+
+    chmod +x "${dir}/libpak-tools"
+  else
+    util::print::info "Using libpak-tools"
+  fi
+}
+
 function util::tools::create-package::install () {
   local dir version
   version=""

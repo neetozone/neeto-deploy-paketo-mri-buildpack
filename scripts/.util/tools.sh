@@ -31,6 +31,8 @@ function util::tools::arch() {
     amd64|x86_64)
       if [[ "${1:-}" == "--blank-amd64" ]]; then
         echo ""
+      elif [[ "${1:-}" == "--format-amd64-x86_64" ]]; then
+        echo "x86_64"
       else
         echo "amd64"
       fi
@@ -135,17 +137,12 @@ function util::tools::pack::install() {
 
     version="$(jq -r .pack "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
 
-    local pack_config_enable_experimental
-    if [ -f "$(dirname "${BASH_SOURCE[0]}")/../options.json" ]; then
-      pack_config_enable_experimental="$(jq -r .pack_config_enable_experimental "$(dirname "${BASH_SOURCE[0]}")/../options.json")"
-    else
-      pack_config_enable_experimental="false"
-    fi
-
+    tmp_location="/tmp/pack.tgz"
     curl_args=(
       "--fail"
       "--silent"
       "--location"
+      "--output" "${tmp_location}"
     )
 
     if [[ "${token}" != "" ]]; then
@@ -158,69 +155,179 @@ function util::tools::pack::install() {
     arch=$(util::tools::arch --blank-amd64)
 
     curl "https://github.com/buildpacks/pack/releases/download/${version}/pack-${version}-${os}${arch:+-$arch}.tgz" \
-      "${curl_args[@]}" | \
-        tar xzf - -C "${dir}"
+      "${curl_args[@]}"
+
+    tar xzf "${tmp_location}" -C "${dir}"
     chmod +x "${dir}/pack"
 
-    if [[ "${pack_config_enable_experimental}" == "true" ]]; then
-      "${dir}"/pack config experimental true
-    fi
-
+    rm "${tmp_location}"
   else
     util::print::info "Using pack $("${dir}"/pack version)"
   fi
 }
 
-function util::tools::packager::install () {
-    local dir
-    while [[ "${#}" != 0 ]]; do
-      case "${1}" in
-        --directory)
-          dir="${2}"
-          shift 2
-          ;;
+function util::tools::yj::install() {
+  local dir token
+  token=""
 
-        *)
-          util::print::error "unknown argument \"${1}\""
-          ;;
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --directory)
+        dir="${2}"
+        shift 2
+        ;;
 
-      esac
-    done
+      --token)
+        token="${2}"
+        shift 2
+        ;;
 
-    mkdir -p "${dir}"
-    util::tools::path::export "${dir}"
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
 
-    if [[ ! -f "${dir}/packager" ]]; then
-      util::print::title "Installing packager"
-      GOBIN="${dir}" go install github.com/cloudfoundry/libcfbuildpack/packager@latest
+  mkdir -p "${dir}"
+  util::tools::path::export "${dir}"
+
+  if [[ ! -f "${dir}/yj" ]]; then
+    local version curl_args os arch
+
+    version="$(jq -r .yj "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
+
+    curl_args=(
+      "--fail"
+      "--silent"
+      "--location"
+      "--output" "${dir}/yj"
+    )
+
+    if [[ "${token}" != "" ]]; then
+      curl_args+=("--header" "Authorization: Token ${token}")
     fi
+
+    util::print::title "Installing yj ${version}"
+
+    os=$(util::tools::os macos)
+    arch=$(util::tools::arch)
+
+    curl "https://github.com/sclevine/yj/releases/download/${version}/yj-${os}-${arch}" \
+      "${curl_args[@]}"
+
+    chmod +x "${dir}/yj"
+  else
+    util::print::info "Using yj $("${dir}"/yj -v 2>&1 || echo "unknown version")"
+  fi
+}
+
+function util::tools::libpak-tools::install () {
+  local dir token
+  token=""
+
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --directory)
+        dir="${2}"
+        shift 2
+        ;;
+
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
+
+  mkdir -p "${dir}"
+  util::tools::path::export "${dir}"
+
+
+  if [[ ! -f "${dir}/libpak-tools" ]]; then
+    local version curl_args os arch
+
+    version="$(jq -r .libpaktools "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
+
+    curl_args=(
+      "--fail"
+      "--silent"
+      "--location"
+      "--output" "${dir}/libpak-tools.tar.gz"
+    )
+
+    if [[ "${token}" != "" ]]; then
+      curl_args+=("--header" "Authorization: Token ${token}")
+    fi
+
+    util::print::title "Installing libpak-tools ${version}"
+
+    os=$(util::tools::os)
+    arch=$(util::tools::arch --format-amd64-x86_64)
+
+    curl "https://github.com/paketo-buildpacks/libpak-tools/releases/download/${version}/libpak-tools_${os}_${arch}.tar.gz" \
+      "${curl_args[@]}"
+
+    tar -xzf "${dir}/libpak-tools.tar.gz" -C $dir
+    rm "${dir}/libpak-tools.tar.gz"
+
+    chmod +x "${dir}/libpak-tools"
+  else
+    util::print::info "Using libpak-tools"
+  fi
 }
 
 function util::tools::create-package::install () {
   local dir version
-    while [[ "${#}" != 0 ]]; do
-      case "${1}" in
-        --directory)
-          dir="${2}"
-          shift 2
-          ;;
+  version=""
 
-        *)
-          util::print::error "unknown argument \"${1}\""
-          ;;
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --directory)
+        dir="${2}"
+        shift 2
+        ;;
 
-      esac
-    done
+      --version)
+        version="${2}"
+        shift 2
+        ;;
 
-    version="$(jq -r .createpackage "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
 
-    mkdir -p "${dir}"
-    util::tools::path::export "${dir}"
+  mkdir -p "${dir}"
+  util::tools::path::export "${dir}"
 
-    if [[ ! -f "${dir}/create-package" ]]; then
-      util::print::title "Installing create-package"
-      GOBIN="${dir}" go install -ldflags="-s -w" "github.com/paketo-buildpacks/libpak/cmd/create-package@${version}"
+  if [[ ! -f "${dir}/create-package" ]]; then
+    local curl_args os arch
+
+    if [[ -z "${version}" ]]; then
+      version="$(jq -r .createpackage "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
     fi
+
+    curl_args=(
+      "--fail"
+      "--silent"
+      "--location"
+      "--output" "${dir}/create-package"
+    )
+
+    util::print::title "Installing create-package ${version}"
+
+    os=$(util::tools::os)
+    arch=$(util::tools::arch)
+
+    curl "https://github.com/paketo-buildpacks/create-package/releases/download/${version}/create-package-${os}-${arch}" \
+      "${curl_args[@]}"
+
+    chmod +x "${dir}/create-package"
+  else
+    util::print::info "Using create-package"
+  fi
 }
 
 function util::tools::tests::checkfocus() {

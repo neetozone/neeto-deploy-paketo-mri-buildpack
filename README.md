@@ -36,12 +36,31 @@ file that looks like the following:
     build = true
 ```
 
-## Usage
+## Packaging
 
 To package this buildpack for consumption:
+
+```bash
+./scripts/package.sh --version 0.19.0
 ```
-$ ./scripts/package.sh
+
+This will build the buildpack for all target architectures specified in `buildpack.toml` (amd64 and arm64 by default) and create a single archive containing binaries for all architectures in the `build/` directory.
+
+## Publishing
+
+To publish this buildpack to ECR:
+
+```bash
+./scripts/publish.sh \
+  --image-ref 348674388966.dkr.ecr.us-east-1.amazonaws.com/neeto-deploy/paketo/buildpack/mri:0.19.0 \
+  --buildpack-type buildpack
 ```
+
+The script will automatically:
+- Read target architectures from `buildpack.toml`
+- Extract the buildpack archive
+- Publish each architecture separately with arch-suffixed tags (e.g., `mri:0.19.0-amd64`, `mri:0.19.0-arm64`)
+- Create and push a multi-arch manifest list
 
 ## MRI Configurations
 

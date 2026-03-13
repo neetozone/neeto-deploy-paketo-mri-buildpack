@@ -7,10 +7,11 @@ shopt -s inherit_errexit
 DEST_DIR=$(mktemp -d)
 
 function main() {
-  local version output_dir target upstream_tarball working_dir configure_opts
+  local version output_dir target arch upstream_tarball working_dir configure_opts
   version=""
   output_dir=""
   target=""
+  arch="amd64"
   upstream_tarball=""
   working_dir=$(mktemp -d)
   configure_opts=()
@@ -29,6 +30,11 @@ function main() {
 
       --target)
         target="${2}"
+        shift 2
+        ;;
+
+      --arch)
+        arch="${2}"
         shift 2
         ;;
 
@@ -65,7 +71,8 @@ function main() {
     exit 1
   fi
 
-  if [[ "${major}" -ge 3 ]] && [[ "${minor}" -ge 2 ]]; then
+  # Enable YJIT for Ruby 3.2+ and 4.0+
+  if [[ "${major}" -ge 4 ]] || ([[ "${major}" -eq 3 ]] && [[ "${minor}" -ge 2 ]]); then
     configure_opts+=("--enable-yjit")
   fi
 
@@ -115,7 +122,14 @@ function main() {
     sha256=$(sha256sum temp.tgz)
     sha256="${sha256:0:64}"
 
-    output_tarball_name="ruby_${version}_linux_x64_${target}_${sha256:0:8}.tgz"
+    # Map architecture names for filename
+    if [[ "${arch}" == "amd64" ]]; then
+      arch_name="x64"
+    else
+      arch_name="${arch}"
+    fi
+
+    output_tarball_name="ruby_${version}_linux_${arch_name}_${target}_${sha256:0:8}.tgz"
 
     echo "Building tarball ${output_tarball_name}"
 

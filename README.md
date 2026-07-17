@@ -2,16 +2,16 @@
 
 ## `gcr.io/paketo-buildpacks/mri`
 
-The MRI CNB provides the Matz's Ruby Interpreter (or MRI). The buildpack
-installs MRI onto the `$PATH` which makes it available for subsequent buildpacks
-and in the final running container. It also sets the `$GEM_PATH` environment
-variable.
+The MRI CNB provides the Matz's Ruby Interpreter (or MRI).
+The buildpack installs MRI onto the `$PATH` which makes it available
+for subsequent buildpacks and in the final running container. It also sets
+the `$GEM_PATH` environment variable.
 
 ## Integration
 
-The MRI CNB provides `mri` as a dependency. Downstream buildpacks, can require
-the mri dependency by generating [Build Plan
-TOML](https://github.com/buildpacks/spec/blob/master/buildpack.md#build-plan-toml)
+The MRI CNB provides `mri` as a dependency. Downstream buildpacks,
+can require the mri dependency by generating
+[Build Plan TOML](https://github.com/buildpacks/spec/blob/master/buildpack.md#build-plan-toml)
 file that looks like the following:
 
 ```toml
@@ -44,9 +44,7 @@ To package this buildpack for consumption:
 ./scripts/package.sh --version 0.19.0
 ```
 
-This will build the buildpack for all target architectures specified in
-`buildpack.toml` (amd64 and arm64 by default) and create a single archive
-containing binaries for all architectures in the `build/` directory.
+This will build the buildpack for all target architectures specified in `buildpack.toml` (amd64 and arm64 by default) and create a single archive containing binaries for all architectures in the `build/` directory.
 
 ## Publishing
 
@@ -61,8 +59,7 @@ To publish this buildpack to ECR:
 The script will automatically:
 - Read target architectures from `buildpack.toml`
 - Extract the buildpack archive
-- Publish each architecture separately with arch-suffixed tags (e.g.,
-  `mri:0.19.0-amd64`, `mri:0.19.0-arm64`)
+- Publish each architecture separately with arch-suffixed tags (e.g., `mri:0.19.0-amd64`, `mri:0.19.0-arm64`)
 - Create and push a multi-arch manifest list
 
 ## MRI Configurations
@@ -71,8 +68,8 @@ Specifying the `MRI` version through `buildpack.yml` configuration will be
 deprecated in MRI Buildpack v1.0.0.
 
 To migrate from using `buildpack.yml` please set the `$BP_MRI_VERSION`
-environment variable at build time either directly (ex. `pack build my-app --env
-BP_MRI_VERSION=3.2.*`) or through a [`project.toml`
+environment variable at build time either directly (ex. `pack build my-app
+--env BP_MRI_VERSION=3.2.*`) or through a [`project.toml`
 file](https://github.com/buildpacks/spec/blob/main/extensions/project-descriptor.md)
 
 ```shell
@@ -103,12 +100,12 @@ $BP_LOG_LEVEL="DEBUG"
 ## Compatibility
 
 This buildpack is currently only supported on the Paketo Bionic and Jammy stack
-distributions. Pre-compiled distributions of Ruby are provided for the Paketo
-stacks (i.e. `io.buildpacks.stack.jammy` and `io.buildpacks.stacks.bionic`).
+distributions. Pre-compiled distributions of Ruby are provided for the Paketo stacks (i.e.
+`io.buildpacks.stack.jammy` and `io.buildpacks.stacks.bionic`).
 
 Jammy stack support only applies to Ruby version 3.1 and above at this time.
 
 ## Development
 
-Paketo buildpacks are going through an uniformization of the dev experience
-across buildpacks, for now just check the [`scripts/`](scripts/) folder.
+Paketo buildpacks are going through an uniformization of the dev experience across buildpacks,
+for now just check the [`scripts/`](scripts/) folder.

@@ -19,13 +19,9 @@ blocks:
           commands:
             - go build ./...
             - go vet ./...
-            # Same as scripts/unit.sh. Integration tests need Docker, pack
-            # and builder images, so they stay out of this workflow.
             - go test ./... -run Unit
         - name: Dependency retrieval build
           commands:
-            # Its tests don't compile yet: testcontainers-go v0.21.0 uses
-            # Docker API types the pinned Docker module removed.
             - cd dependency/retrieval && go build ./...
 
 triggers:

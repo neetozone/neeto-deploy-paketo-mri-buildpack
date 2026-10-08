@@ -1,0 +1,34 @@
+version: v1.0
+
+fail_fast: true
+
+plan: standard-2
+
+global_job_config:
+  prologue:
+    commands:
+      - neetoci-version go 1.26
+      - checkout
+
+blocks:
+  - name: "Tests"
+    dependencies: []
+    task:
+      jobs:
+        - name: Buildpack unit tests
+          commands:
+            - go build ./...
+            - go vet ./...
+            # Same as scripts/unit.sh. Integration tests need Docker, pack
+            # and builder images, so they stay out of this workflow.
+            - go test ./... -run Unit
+        - name: Dependency retrieval build
+          commands:
+            # Its tests don't compile yet: testcontainers-go v0.21.0 uses
+            # Docker API types the pinned Docker module removed.
+            - cd dependency/retrieval && go build ./...
+
+triggers:
+  - event: branch
+    branch_name: main
+  - event: pull_request
